@@ -1,0 +1,264 @@
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <style>
+            .txt {
+                width: 500px;
+                height: 100px;
+            }
+            .url {
+                width: 60%;
+                position: absolute;
+                margin-left: 30px;
+            }
+            .txtRes {
+                width: 75%;
+                height: 200px;
+            }
+        </style>
+    </head>
+    <body style="padding:50px;">
+        <div style="padding:15px;">            
+            <button id="button-Login">Login</button>
+        </div>           
+        <div>
+            <div style="padding:15px;"><span>Paste Auth code:</span></div>
+            <textarea class="txt" id="code" onchange="codeChange(this)"></textarea>
+            <textarea class="txt" id="token" readonly disabled='disabled'></textarea>
+        </div>
+        <div style="padding:15px;">
+            <button id="button-Token">Get Token</button>       
+        </div>
+        <div style="padding:15px;">
+            <button id="button-Get">Get Request</button>
+            <textarea class="url" id="url" type="text" placeholder="Enter get url here..."></textarea>
+        </div>
+        <div style="padding:15px;">
+            <div style="padding-bottom:15px;"><button id="button-Post">Post Request</button></div>
+            <textarea class="txt" id="body" type="text" onchange="bodyChange(this)" placeholder="Paste post body here..."></textarea>
+        </div>
+        <div style="padding:15px;">
+            <div><span>response:</span></div>
+            <textarea class="txtRes" id="response" type="text" readonly disabled></textarea>
+        </div>     
+    </body>
+    <script>
+        var AuthCode = document.getElementById("code");
+        var Token = document.getElementById("token");
+        var Response = document.getElementById("response");
+        var Body = document.getElementById("body");
+        var Url = document.getElementById("url");
+        AuthCode.value = '';
+        Token.value = '';
+        if(window.localStorage.getItem('tokenResponse') && window.localStorage.getItem('tokenResponse')!=''){
+            var Token_Obj = JSON.parse( window.localStorage.getItem('tokenResponse'));
+            Url.value = Token_Obj.resource;
+            Token.value = JSON.stringify (Token_Obj,null,4); 
+        }
+        var params1 = {
+            tenant_id:'',
+            client_id : ("635c1875-0936-439b-87ff-2b75fad8eae2").toUpperCase(),
+            response_type:"code",
+            redirect_uri:"https://spo-teamsite.ge.com/sites/gubata-test/SitePages/Home.aspx",
+            response_mode:"query",
+            resource:"https://spo-teamsite.ge.com",
+            client_secret:"m1pQ6JVzI3E.lfZEM-sjFBy4RTLl+dq*",
+            scope: 'https://spo-teamsite.ge.com/AllSites.Write',
+            grant_type:"authorization_code"           
+        }
+
+        var params = {
+            tenant_id:'057febc5-d1f0-464b-a50d-688064c7d966',
+            client_id : ("68cce58f-20a7-4340-8850-c6691d9d45a7").toUpperCase(),
+            response_type:"code",
+            redirect_uri:"http://localhost:5500",
+            response_mode:"query",
+            resource:"https://vrish.sharepoint.com",
+            client_secret:"45rvGLf6K9oHI-Zb?U/gYGmsoBX@-wI9",
+            scope: 'https://vrish.sharepoint.com/AllSites.Write',
+            grant_type:"authorization_code"           
+        }
+        var TokenEndPoint = 'http://cors-anywhere.herokuapp.com/https://login.microsoftonline.com/common/oauth2/token';
+        var AuthorizeEndPointV1 = 'https://login.microsoftonline.com/common/oauth2/authorize';
+        var AuthorizeEndPointV2 =  'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+
+        
+        
+        $('#button-Login').click(function(){       
+            AuthorizeEndPointV1 += '?client_id=' + params.client_id + '&response_type=' + params.response_type
+                                +'&redirect_uri=' + encodeURIComponent(params.redirect_uri) + '&response_mode=' +params.response_mode
+                                +'&resource=' + encodeURIComponent(params.resource) + '&status=12345';
+            AuthorizeEndPointV2 += '?client_id=' + params.client_id + '&response_type=' + params.response_type
+                                +'&redirect_uri=' + encodeURIComponent(params.redirect_uri) + '&response_mode=' +params.response_mode
+                                +'&scope=' + encodeURIComponent(params.scope) + '&status=12345';                   
+            
+            //window.location.href = AuthorizeEndPoint;
+            debugger;
+            window.open(AuthorizeEndPointV2, '_blank');                     
+        });
+            
+        $('#button-Token').click(function(){       
+            getToken();
+        });
+        $('#button-Get').click(function(){           
+            getRequest();
+        });
+        $('#button-Post').click(function(){           
+            RequestDigest().then(function(digest){
+                postRequest(digest);
+            });
+        });
+
+        function bodyChange(event){
+            console.log(event.value);
+            try {
+                var obj = JSON.parse(event.value);
+                var bodyJson = JSON.stringify(obj,null,4);
+                event.value = bodyJson;
+            }catch(e){
+                var msg='';                
+                if(e.message.indexOf('position') > -1){
+                    msg = e.message[parseInt (e.message.split('position ')[1])]
+                }
+                alert(e.message + "\n" + msg);
+            }
+        }
+
+        function codeChange(event){
+            if( event && event.length > 0){
+                getToken()
+            }
+        }
+        
+            
+            
+
+
+            function getToken(){
+                var accesscode;
+                if(window.location.href.split('?code=').length >= 2){
+                var accesscode = window.location.href.split('?code=')[1].split('&')[0];
+                debugger;
+                } else{
+                    accesscode = document.getElementById("code").value;
+                }
+
+                var  reqData = {
+                                'client_id': params.client_id, //here need to pass your client id
+                                'grant_type': params.grant_type, //here is which type of way you have to doing for get token we used auth code.
+                                'code': accesscode, //here you need to pass auth code value
+                                'resource': params.resource, //here you need to pass your site url
+                                'redirect_uri': params.redirect_uri,
+                                'client_secret':params.client_secret
+                            }
+                $.ajax({
+                    type: "POST",
+                    url: TokenEndPoint,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    data: reqData,
+                    //dataType:"json",
+                    success: function (response) {
+                        debugger;
+                        console.log(response);                        
+                        window.localStorage.setItem('token', 'Bearer '+response.access_token);
+                        var tk = response;
+                        Url.value = tk.resource;                        
+                        window.localStorage.setItem('tokenResponse',JSON.stringify (tk));  
+                        Token.value = JSON.stringify(tk,null,4);                     
+                    },
+                    error: function( response ){
+                        console.log( response );
+                        window.localStorage.setItem('token', '');
+                        window.localStorage.setItem('tokenResponse','');
+                        Token.value = window.localStorage.getItem('tokenResponse');
+                        alert(response.responseJSON.error+ ";\n"+ response.responseJSON.error_description);
+                        Response.value = JSON.stringify(response.responseJSON,null,4);
+                    }
+                });
+            
+
+            } 
+
+            function getRequest(){                
+                debugger;
+                var url;
+                //url = params.resource + params.Site +"/_api/web/lists/getByTitle('"+ params.List +"')/items";
+                url = Url.value;
+                $.ajax({
+                    url:url,
+                    type: "get",
+                    headers:{
+                        "Authorization":window.localStorage.getItem('token'),                        
+                        "Accept":"application/json;odata=verbose"
+                    }, //'https://graph.microsoft.com/v1.0/me',                  
+                    success: function (response) {
+                        console.log(response);
+                        Response.value = JSON.stringify (response,null,4);
+                    },
+                    error: function( response ){
+                    console.log( response );
+                    alert(response.statusText);
+                    Response.value = JSON.stringify(response.statusText,null,4);
+                    }
+                });                
+            }
+
+            function postRequest(digest){
+                var url,data; 
+                //url = params.resource + params.Site + "/_api/web/lists/GetByTitle('"+ params.List +"')/items";
+                url = Url.value;
+                try { data = JSON.parse(Body.value) } catch(e) { console.log(e.message); alert(e.message); return; }
+
+                    $.ajax({
+                            url: url,                
+                            type: 'post', 
+                            headers: {
+                                'Authorization': window.localStorage.getItem('token'), 
+                                'X-RequestDigest': digest, 
+                                'accept': "application/json;odata=verbose",
+                                'content-type': "application/json;odata=verbose",
+                            },
+                            data: JSON.stringify(data), //{ '__metadata': { 'type': params.__metadata }, 'Title': 'Test'},
+                            dataType: 'json',       
+                            success: function( response ){
+                                console.log( 'item added!' );
+                                alert('item Added!');
+                                Response.value = JSON.stringify(response,null,4);
+                            },
+                            error: function( response ) {
+                                debugger;
+                                console.log( response );
+                                Response.value = JSON.stringify(response.statusText,null,4);
+                                alert(response.statusText);
+                            }
+                    });
+            }
+
+            function RequestDigest(){
+                var d = $.Deferred();
+                var url;
+                //url = params.resource + params.Site +'/_api/contextinfo';
+                url = Url.value.split('_api')[0];
+                    $.ajax({
+                    url: url+'/_api/contextinfo',                
+                    type: 'post', 
+                    headers: {
+                        'Accept':'application/json',
+                        'Authorization': window.localStorage.getItem('token')
+                    },       
+                    success: function( data, textStatus, jQxhr ){
+                        console.log("Form Digest= " +data.FormDigestValue );
+                         d.resolve(data.FormDigestValue);
+                    },
+                    error: function( response ){
+                        console.log( response );
+                        Response.value = JSON.stringify(response.statusText,null,4);
+                        alert(response.statusText);                        
+                    }
+                });
+                return d;
+            }
+    </script>
+</html>
