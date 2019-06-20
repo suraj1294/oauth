@@ -15,9 +15,19 @@
                 width: 75%;
                 height: 200px;
             }
+            .label{
+                display: inline-block;
+                width: 100px;
+            }
         </style>
     </head>
-    <body style="padding:50px;">
+    <body style="padding-left:50px;padding-top: 5px">
+        <div  style="padding:15px;">
+            <label class="label" for="UserName">UserName:</label><input type="text" id="user" />          
+        </div>
+        <div style="padding:15px;">
+            <label class="label"  for="password">Passeord:</label><input type="password" id="pass"/>
+        </div>
         <div style="padding:15px;">            
             <button id="button-Login">Login</button>
         </div>           
@@ -27,7 +37,8 @@
             <textarea class="txt" id="token" readonly disabled='disabled'></textarea>
         </div>
         <div style="padding:15px;">
-            <button id="button-Token">Get Token</button>       
+            <button id="button-Token">Get Token</button>
+            <button id="button-RefreshToken">Refresh Token</button>       
         </div>
         <div style="padding:15px;">
             <button id="button-Get">Get Request</button>
@@ -55,50 +66,63 @@
             Url.value = Token_Obj.resource;
             Token.value = JSON.stringify (Token_Obj,null,4); 
         }
-        var params1 = {
-            tenant_id:'',
+        var params = {
+            tenant_id:'15ccb6d1-d335-4996-b6f9-7b6925f08121',
             client_id : ("635c1875-0936-439b-87ff-2b75fad8eae2").toUpperCase(),
             response_type:"code",
-            redirect_uri:"https://spo-teamsite.ge.com/sites/gubata-test/SitePages/Home.aspx",
+            redirect_uri:"http://localhost/",//https://spo-teamsite.ge.com/sites/gubata-test/SitePages/Home.aspx",//"https://login.microsoftonline.com/common/oauth2/nativeclient"
             response_mode:"query",
-            resource:"https://spo-teamsite.ge.com",
+             resource:"https://spo-teamsite.ge.com",
+           //resource:"https://graph.microsoft.com",
             client_secret:"m1pQ6JVzI3E.lfZEM-sjFBy4RTLl+dq*",
             scope: 'https://spo-teamsite.ge.com/AllSites.Write',
             grant_type:"authorization_code"           
         }
 
-        var params = {
+        var params1 = {
             tenant_id:'057febc5-d1f0-464b-a50d-688064c7d966',
-            client_id : ("68cce58f-20a7-4340-8850-c6691d9d45a7").toUpperCase(),
+            client_id : ("4b7447e7-171b-4522-b21c-e1b979b715a3").toUpperCase(),
             response_type:"code",
-            redirect_uri:"http://localhost:5500",
+            redirect_uri:"https://login.microsoftonline.com/common/oauth2/nativeclient",
             response_mode:"query",
             resource:"https://vrish.sharepoint.com",
-            client_secret:"45rvGLf6K9oHI-Zb?U/gYGmsoBX@-wI9",
-            scope: 'https://vrish.sharepoint.com/AllSites.Write',
+            //resource:"https://graph.microsoft.com",
+            client_secret:'FruQrS/1mmyh23Da7/o[]miUIziCZ8p]',//"45rvGLf6K9oHI-Zb?U/gYGmsoBX@-wI9",
+            scope: 'https://vrish.sharepoint.com/AllSites.Write',//'https://graph.microsoft.com/User.Read openid',// //'',
             grant_type:"authorization_code"           
         }
+        const url = `https://login.microsoftonline.com/15ccb6d1-d335-4996-b6f9-7b6925f08121/oauth2/v2.0/authorize?client_id=87db7785-4c7f-470b-bb9c-004715611a06&response_type=code&redirect_uri=http://localhost:8100/home&client_secret=.o+v/8b4xL:rek96HcA?cnF.@QuXyBoe&scope= https://spo-teamsite.ge.com/AllSites.Write`;
+       
         var TokenEndPoint = 'http://cors-anywhere.herokuapp.com/https://login.microsoftonline.com/common/oauth2/token';
+        var TokenEndPointV2 = 'http://cors-anywhere.herokuapp.com/https://login.microsoftonline.com/'+ params.tenant_id +'/oauth2/v2.0/token';
         var AuthorizeEndPointV1 = 'https://login.microsoftonline.com/common/oauth2/authorize';
-        var AuthorizeEndPointV2 =  'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+        var AuthorizeEndPointV2 =  'https://login.microsoftonline.com/'+ params.tenant_id +'/oauth2/v2.0/authorize';
 
         
         
-        $('#button-Login').click(function(){       
+        $('#button-Login').click(function(){
+            var user = document.getElementById('user').value;
+            var pass  = document.getElementById('pass').value;            
             AuthorizeEndPointV1 += '?client_id=' + params.client_id + '&response_type=' + params.response_type
-                                +'&redirect_uri=' + encodeURIComponent(params.redirect_uri) + '&response_mode=' +params.response_mode
-                                +'&resource=' + encodeURIComponent(params.resource) + '&status=12345';
+                                +'&redirect_uri=' + encodeURI(params.redirect_uri) + '&response_mode=' +params.response_mode
+                                +'&resource=' + encodeURI(params.resource) + '&status=12345';
             AuthorizeEndPointV2 += '?client_id=' + params.client_id + '&response_type=' + params.response_type
-                                +'&redirect_uri=' + encodeURIComponent(params.redirect_uri) + '&response_mode=' +params.response_mode
-                                +'&scope=' + encodeURIComponent(params.scope) + '&status=12345';                   
-            
+                                +'&redirect_uri=' + encodeURI(params.redirect_uri) + '&response_mode=' +params.response_mode
+                                +'&scope=' + encodeURI(params.scope) + '&status=12345';   
+            if(!user && !pass){            
             //window.location.href = AuthorizeEndPoint;
             debugger;
-            window.open(AuthorizeEndPointV2, '_blank');                     
+            window.open(AuthorizeEndPointV2, '_blank'); 
+            } else {
+                directToken(user,pass);
+            }                   
         });
             
         $('#button-Token').click(function(){       
             getToken();
+        });
+        $('#button-RefreshToken').click(function(){       
+            refreshToken();
         });
         $('#button-Get').click(function(){           
             getRequest();
@@ -129,6 +153,51 @@
                 getToken()
             }
         }
+
+        function directToken(user,pass){
+            var accesscode;
+                if(window.location.href.split('?code=').length >= 2){
+                var accesscode = window.location.href.split('?code=')[1].split('&')[0];
+                debugger;
+                } else{
+                    accesscode = document.getElementById("code").value;
+                }
+            var  reqData = {
+                                'client_id': params.client_id, //here need to pass your client id
+                                'grant_type': 'password', //here is which type of way you have to doing for get token we used auth code.
+                                'username': user,
+                                'password': pass,
+                                'scope':encodeURIComponent(params.scope),
+                                //'client_secret':params.client_secret
+                            }
+                $.ajax({
+                    type: "POST",
+                    url: TokenEndPointV2,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    data: reqData,
+                    //dataType:"json",
+                    success: function (response) {
+                        debugger;
+                        console.log(response);                        
+                        window.localStorage.setItem('token', 'Bearer '+response.access_token);
+                        var tk = response;
+                        Url.value = tk.resource;                        
+                        window.localStorage.setItem('tokenResponse',JSON.stringify (tk));  
+                        Token.value = JSON.stringify(tk,null,4);  
+                        alert("Success!");                   
+                    },
+                    error: function( response ){
+                        console.log( response );
+                        window.localStorage.setItem('token', '');
+                        window.localStorage.setItem('tokenResponse','');
+                        Token.value = window.localStorage.getItem('tokenResponse');
+                        alert(response.responseJSON.error+ ";\n"+ response.responseJSON.error_description);
+                        Response.value = JSON.stringify(response.responseJSON,null,4);
+                    }
+                });               
+        }
         
             
             
@@ -147,7 +216,7 @@
                                 'client_id': params.client_id, //here need to pass your client id
                                 'grant_type': params.grant_type, //here is which type of way you have to doing for get token we used auth code.
                                 'code': accesscode, //here you need to pass auth code value
-                                'resource': params.resource, //here you need to pass your site url
+                                //'resource': params.resource, //here you need to pass your site url
                                 'redirect_uri': params.redirect_uri,
                                 'client_secret':params.client_secret
                             }
@@ -166,7 +235,8 @@
                         var tk = response;
                         Url.value = tk.resource;                        
                         window.localStorage.setItem('tokenResponse',JSON.stringify (tk));  
-                        Token.value = JSON.stringify(tk,null,4);                     
+                        Token.value = JSON.stringify(tk,null,4);  
+                        alert("Success!");                   
                     },
                     error: function( response ){
                         console.log( response );
@@ -180,6 +250,45 @@
             
 
             } 
+
+            function refreshToken(){
+                var tokenObj = JSON.parse (window.localStorage.getItem('tokenResponse'));
+                var  reqData = {
+                                'client_id': params.client_id, //here need to pass your client id
+                                'grant_type': 'refresh_token', //here is which type of way you have to doing for get token we used auth code.
+                                'refresh_token': tokenObj.refresh_token,                                
+                                'redirect_uri': params.redirect_uri,
+                                'client_secret':params.client_secret
+                }
+
+                $.ajax({
+                    type: "POST",
+                    url: TokenEndPoint,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    data: reqData,
+                    //dataType:"json",
+                    success: function (response) {
+                        debugger;
+                        console.log(response);                        
+                        window.localStorage.setItem('token', 'Bearer '+response.access_token);
+                        var tk = response;
+                        Url.value = tk.resource;                        
+                        window.localStorage.setItem('tokenResponse',JSON.stringify (tk));  
+                        Token.value = JSON.stringify(tk,null,4);   
+                        alert("Success!");                   
+                    },
+                    error: function( response ){
+                        console.log( response );
+                        window.localStorage.setItem('token', '');
+                        window.localStorage.setItem('tokenResponse','');
+                        Token.value = window.localStorage.getItem('tokenResponse');
+                        alert(response.responseJSON.error+ ";\n"+ response.responseJSON.error_description);
+                        Response.value = JSON.stringify(response.responseJSON,null,4);
+                    }
+                });
+            }
 
             function getRequest(){                
                 debugger;
@@ -196,11 +305,12 @@
                     success: function (response) {
                         console.log(response);
                         Response.value = JSON.stringify (response,null,4);
+                        alert("Success!"); 
                     },
                     error: function( response ){
                     console.log( response );
                     alert(response.statusText);
-                    Response.value = JSON.stringify(response.statusText,null,4);
+                    Response.value = JSON.stringify(response.statusText+"\n"+(response.responseText)?response.responseText:'',null,4);
                     }
                 });                
             }
@@ -220,8 +330,7 @@
                                 'accept': "application/json;odata=verbose",
                                 'content-type': "application/json;odata=verbose",
                             },
-                            data: JSON.stringify(data), //{ '__metadata': { 'type': params.__metadata }, 'Title': 'Test'},
-                            dataType: 'json',       
+                            data: JSON.stringify(data), //{ '__metadata': { 'type': params.__metadata }, 'Title': 'Test'},      
                             success: function( response ){
                                 console.log( 'item added!' );
                                 alert('item Added!');
@@ -230,7 +339,7 @@
                             error: function( response ) {
                                 debugger;
                                 console.log( response );
-                                Response.value = JSON.stringify(response.statusText,null,4);
+                                Response.value = JSON.stringify(response.statusText+"\n"+(response.responseText)?response.responseText:'',null,4);
                                 alert(response.statusText);
                             }
                     });
@@ -254,7 +363,7 @@
                     },
                     error: function( response ){
                         console.log( response );
-                        Response.value = JSON.stringify(response.statusText,null,4);
+                        Response.value = JSON.stringify(response.statusText+"\n"+(response.responseText)?response.responseText:'',null,4);
                         alert(response.statusText);                        
                     }
                 });
